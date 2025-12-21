@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
-const { auth } = require('../middleware/auth');
+const { auth, optionalAuth } = require('../middleware/auth');
 
 // Get cart (works for both logged in and guest users)
-router.get('/', async (req, res) => {
+router.get('/', optionalAuth, async (req, res) => {
   try {
     const userId = req.user?.id;
     const { session_id } = req.query;
@@ -53,7 +53,7 @@ router.get('/', async (req, res) => {
 });
 
 // Add to cart
-router.post('/add', async (req, res) => {
+router.post('/add', optionalAuth, async (req, res) => {
   try {
     const { product_id, variant_id, quantity, session_id } = req.body;
     const userId = req.user?.id;
@@ -125,7 +125,7 @@ router.post('/add', async (req, res) => {
 });
 
 // Update cart item quantity
-router.put('/:id', async (req, res) => {
+router.put('/:id', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { quantity } = req.body;
@@ -164,7 +164,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Remove from cart
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user?.id;
@@ -197,7 +197,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // Clear cart
-router.delete('/clear/all', async (req, res) => {
+router.delete('/clear/all', optionalAuth, async (req, res) => {
   try {
     const userId = req.user?.id;
     const { session_id } = req.query;

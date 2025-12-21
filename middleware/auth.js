@@ -16,6 +16,22 @@ const auth = (req, res, next) => {
   }
 };
 
+// Optional auth - doesn't block if no token, but sets req.user if token exists
+const optionalAuth = (req, res, next) => {
+  try {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = decoded;
+    }
+    next();
+  } catch (error) {
+    // If token is invalid, just continue without user
+    next();
+  }
+};
+
 const adminAuth = (req, res, next) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Access denied. Admin only.' });
@@ -23,4 +39,4 @@ const adminAuth = (req, res, next) => {
   next();
 };
 
-module.exports = { auth, adminAuth };
+module.exports = { auth, optionalAuth, adminAuth };
