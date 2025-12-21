@@ -41,26 +41,17 @@ router.get('/', async (req, res) => {
 // Fix null slugs (TEMPORARY - remove after use)
 router.get('/fix-null-slugs-temp', async (req, res) => {
   try {
-    console.log('Fixing null slugs...');
-    // Get products with null slugs
-    const nullSlugs = await pool.query('SELECT id, name FROM products WHERE slug IS NULL');
+    console.log('Deleting products with null slugs (old duplicates)...');
     
-    console.log(`Found ${nullSlugs.rows.length} products with null slugs`);
+    // Delete products with null slugs (these are old duplicates from before seed script was fixed)
+    const result = await pool.query('DELETE FROM products WHERE slug IS NULL RETURNING id, name');
     
-    const updated = [];
-    for (const product of nullSlugs.rows) {
-      const slug = product.name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '');
-      
-      console.log(`Updating product ${product.id}: ${product.name} -> ${slug}`);
-      await pool.query('UPDATE products SET slug = $1 WHERE id = $2', [slug, product.id]);
-      updated.push({ id: product.id, name: product.name, slug });
-    }
-    
-    console.log('✅ Slugs fixed!');
-    res.json({ message: 'Slugs fixed', count: updated.length, updated });
+    console.log(`✅ Deleted ${result.rows.length} old products with null slugs`);
+    res.json({ 
+      message: 'Old duplicate products deleted', 
+      count: result.rows.length, 
+      deleted: result.rows 
+    });
   } catch (error) {
     console.error('Error fixing slugs:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
