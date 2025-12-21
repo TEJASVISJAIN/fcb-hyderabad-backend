@@ -59,6 +59,8 @@ app.get('/api/health', (req, res) => {
 });
 
 // Debug route to show registered routes
+let routeLoadError = null;
+
 app.get('/api/debug/routes', (req, res) => {
   const routes = [];
   app._router.stack.forEach((middleware) => {
@@ -78,7 +80,7 @@ app.get('/api/debug/routes', (req, res) => {
       });
     }
   });
-  res.json({ routes });
+  res.json({ routes, error: routeLoadError ? routeLoadError.message + '\n' + routeLoadError.stack : null });
 });
 
 // Routes (wrapped in try-catch for better error handling)
@@ -101,6 +103,7 @@ try {
   app.use('/api/orders', require('./routes/orders'));
   console.log('✅ All routes loaded successfully');
 } catch (error) {
+  routeLoadError = error;
   console.error('❌ Error loading routes:', error);
   console.error('Error stack:', error.stack);
 }
