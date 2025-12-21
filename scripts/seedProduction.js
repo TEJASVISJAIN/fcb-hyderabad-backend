@@ -33,7 +33,7 @@ async function seedProduction() {
     const blogs = [
       {
         title: 'Barça\'s Legacy in India: The Hyderabad Chapter',
-        content: '<h2>Welcome to FCB Hyderabad Peña!</h2><p>As one of the most passionate Barcelona supporter groups in India, we bring together fans who bleed Blaugrana. Our peña organizes match screenings, discussions, and events celebrating the beautiful game as played by FC Barcelona.</p><h3>Our Mission</h3><ul><li>Unite Barcelona fans across Hyderabad</li><li>Create memorable match-day experiences</li><li>Spread the Barça philosophy</li><li>Build a community of Culés</li></ul><p><strong>Visca el Barça!</strong> 🔵🔴</p>'
+        content: '<h2>Welcome to FCB Hyderabad!</h2><p>As one of the most passionate Barcelona supporter groups in India, we bring together fans who bleed Blaugrana. Our club organizes match screenings, discussions, and events celebrating the beautiful game as played by FC Barcelona.</p><h3>Our Mission</h3><ul><li>Unite Barcelona fans across Hyderabad</li><li>Create memorable match-day experiences</li><li>Spread the Barça philosophy</li><li>Build a community of Culés</li></ul><p><strong>Visca el Barça!</strong> 🔵🔴</p>'
       },
       {
         title: 'El Clásico Watch Party: An Unforgettable Night',
@@ -98,7 +98,7 @@ async function seedProduction() {
 
     // 5. Create products
     const products = [
-      { name: 'FCB Hyderabad Official T-Shirt', description: 'Premium quality cotton t-shirt with FCB Hyderabad logo', category: 'Apparel', price: 799, image_url: '/uploads/products/tshirt.jpg' },
+      { name: 'FCB Hyderabad T-Shirt', description: 'Premium quality cotton t-shirt with FCB Hyderabad logo', category: 'Apparel', price: 799, image_url: '/uploads/products/tshirt.jpg' },
       { name: 'FCB Hyderabad Cap', description: 'Stylish cap with embroidered logo', category: 'Accessories', price: 499, image_url: '/uploads/products/cap.jpg' },
       { name: 'FCB Hyderabad Hoodie', description: 'Warm and comfortable hoodie for true fans', category: 'Apparel', price: 1499, image_url: '/uploads/products/hoodie.jpg' },
       { name: 'FCB Hyderabad Mug', description: 'Start your day with Barça spirit!', category: 'Accessories', price: 299, image_url: '/uploads/products/mug.jpg' },

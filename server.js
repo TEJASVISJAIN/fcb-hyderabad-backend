@@ -111,7 +111,7 @@ try {
 // Welcome route
 app.get('/', (req, res) => {
   res.json({ 
-    message: '🔵🔴 Visca el Barça! Welcome to the Hyderabad Peña API 🔴🔵',
+    message: '🔵🔴 Visca el Barça! Welcome to the Hyderabad Supporters Club API 🔴🔵',
     endpoints: {
       auth: '/api/auth',
       blogs: '/api/blogs'
