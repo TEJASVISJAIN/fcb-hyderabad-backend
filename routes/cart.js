@@ -10,8 +10,14 @@ router.get('/', async (req, res) => {
     const { session_id } = req.query;
 
     let query = `
-      SELECT ci.*, p.name, p.price, p.featured_image, p.slug,
-             pv.size, pv.color, pv.price_adjustment
+      SELECT ci.*, 
+             p.name as product_name, 
+             p.price as product_price, 
+             p.featured_image as product_image, 
+             p.slug,
+             pv.size as variant_size, 
+             pv.color as variant_color, 
+             pv.price_adjustment as variant_price_adjustment
       FROM cart_items ci
       JOIN products p ON ci.product_id = p.id
       LEFT JOIN product_variants pv ON ci.variant_id = pv.id
@@ -33,7 +39,7 @@ router.get('/', async (req, res) => {
     // Calculate total
     const cart = result.rows.map(item => ({
       ...item,
-      item_total: (parseFloat(item.price) + parseFloat(item.price_adjustment || 0)) * item.quantity
+      item_total: (parseFloat(item.product_price) + parseFloat(item.variant_price_adjustment || 0)) * item.quantity
     }));
 
     const total = cart.reduce((sum, item) => sum + item.item_total, 0);
