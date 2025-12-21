@@ -98,18 +98,21 @@ async function seedProduction() {
 
     // 5. Create products
     const products = [
-      { name: 'FCB Hyderabad Official T-Shirt', description: 'Premium quality cotton t-shirt with FCB Hyderabad logo', category: 'Apparel', base_price: 799, image_url: '/uploads/products/tshirt.jpg' },
-      { name: 'FCB Hyderabad Cap', description: 'Stylish cap with embroidered logo', category: 'Accessories', base_price: 499, image_url: '/uploads/products/cap.jpg' },
-      { name: 'FCB Hyderabad Hoodie', description: 'Warm and comfortable hoodie for true fans', category: 'Apparel', base_price: 1499, image_url: '/uploads/products/hoodie.jpg' },
-      { name: 'FCB Hyderabad Mug', description: 'Start your day with Barça spirit!', category: 'Accessories', base_price: 299, image_url: '/uploads/products/mug.jpg' },
-      { name: 'FCB Hyderabad Scarf', description: 'Show your colors with pride', category: 'Accessories', base_price: 599, image_url: '/uploads/products/scarf.jpg' }
+      { name: 'FCB Hyderabad Official T-Shirt', description: 'Premium quality cotton t-shirt with FCB Hyderabad logo', category: 'Apparel', price: 799, image_url: '/uploads/products/tshirt.jpg' },
+      { name: 'FCB Hyderabad Cap', description: 'Stylish cap with embroidered logo', category: 'Accessories', price: 499, image_url: '/uploads/products/cap.jpg' },
+      { name: 'FCB Hyderabad Hoodie', description: 'Warm and comfortable hoodie for true fans', category: 'Apparel', price: 1499, image_url: '/uploads/products/hoodie.jpg' },
+      { name: 'FCB Hyderabad Mug', description: 'Start your day with Barça spirit!', category: 'Accessories', price: 299, image_url: '/uploads/products/mug.jpg' },
+      { name: 'FCB Hyderabad Scarf', description: 'Show your colors with pride', category: 'Accessories', price: 599, image_url: '/uploads/products/scarf.jpg' }
     ];
 
     for (const product of products) {
+      // Generate slug
+      const slug = product.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      
       const productResult = await client.query(
-        `INSERT INTO products (name, description, category, base_price, image_url)
-         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-        [product.name, product.description, product.category, product.base_price, product.image_url]
+        `INSERT INTO products (name, slug, description, category, price, featured_image, is_active, stock_quantity)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+        [product.name, slug, product.description, product.category, product.price, product.image_url, true, 100]
       );
       
       const productId = productResult.rows[0].id;
@@ -121,17 +124,17 @@ async function seedProduction() {
         for (const size of sizes) {
           for (const color of colors) {
             await client.query(
-              `INSERT INTO product_variants (product_id, size, color, stock_quantity, price, sku)
+              `INSERT INTO product_variants (product_id, size, color, stock_quantity, price_adjustment, sku)
                VALUES ($1, $2, $3, $4, $5, $6)`,
-              [productId, size, color, 50, product.base_price, `${product.name.substring(0,3).toUpperCase()}-${size}-${color.substring(0,3).toUpperCase()}`]
+              [productId, size, color, 50, 0, `${product.name.substring(0,3).toUpperCase()}-${size}-${color.substring(0,3).toUpperCase()}`]
             );
           }
         }
       } else {
         await client.query(
-          `INSERT INTO product_variants (product_id, size, color, stock_quantity, price, sku)
+          `INSERT INTO product_variants (product_id, size, color, stock_quantity, price_adjustment, sku)
            VALUES ($1, $2, $3, $4, $5, $6)`,
-          [productId, 'One Size', 'Blue/Red', 100, product.base_price, `${product.name.substring(0,3).toUpperCase()}-OS`]
+          [productId, 'One Size', 'Blue/Red', 100, 0, `${product.name.substring(0,3).toUpperCase()}-OS`]
         );
       }
     }
