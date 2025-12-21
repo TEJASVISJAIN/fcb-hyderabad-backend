@@ -83,17 +83,26 @@ app.get('/api/debug/routes', (req, res) => {
 
 // Routes (wrapped in try-catch for better error handling)
 try {
+  console.log('📍 Loading auth routes...');
   app.use('/api/auth', require('./routes/auth'));
+  console.log('📍 Loading blogs routes...');
   app.use('/api/blogs', require('./routes/blogs'));
+  console.log('📍 Loading events routes...');
   app.use('/api/events', require('./routes/events'));
+  console.log('📍 Loading bookings routes...');
   app.use('/api/bookings', require('./routes/bookings'));
+  console.log('📍 Loading seat-locks routes...');
   app.use('/api/seat-locks', require('./routes/seatLocks'));
+  console.log('📍 Loading products routes...');
   app.use('/api/products', require('./routes/products'));
+  console.log('📍 Loading cart routes...');
   app.use('/api/cart', require('./routes/cart'));
+  console.log('📍 Loading orders routes...');
   app.use('/api/orders', require('./routes/orders'));
   console.log('✅ All routes loaded successfully');
 } catch (error) {
   console.error('❌ Error loading routes:', error);
+  console.error('Error stack:', error.stack);
 }
 
 // Welcome route
