@@ -211,6 +211,25 @@ router.put('/:id', auth, adminAuth, async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
+    // Sync variants if sizes and colors are provided
+    if (sizes && sizes.length > 0 && colors && colors.length > 0) {
+      // Delete existing variants
+      await pool.query('DELETE FROM product_variants WHERE product_id = $1', [id]);
+      
+      // Create new variants for each size/color combination
+      for (const size of sizes) {
+        for (const color of colors) {
+          const sku = `${name.substring(0, 3).toUpperCase()}-${size}-${color.substring(0, 3).toUpperCase()}`;
+          await pool.query(
+            `INSERT INTO product_variants (product_id, size, color, stock_quantity, price_adjustment, sku)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (sku) DO NOTHING`,
+            [id, size, color, stock_quantity || 50, 0, sku]
+          );
+        }
+      }
+    }
+
     res.json({ product: result.rows[0], message: 'Product updated successfully' });
   } catch (error) {
     console.error('Error updating product:', error);
