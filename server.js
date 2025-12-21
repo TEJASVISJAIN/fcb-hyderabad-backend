@@ -68,8 +68,9 @@ try {
   app.use('/api/products', require('./routes/products'));
   app.use('/api/cart', require('./routes/cart'));
   app.use('/api/orders', require('./routes/orders'));
+  console.log('✅ All routes loaded successfully');
 } catch (error) {
-  console.error('Error loading routes:', error);
+  console.error('❌ Error loading routes:', error);
 }
 
 // Welcome route
