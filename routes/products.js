@@ -38,7 +38,33 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get product by slug
+// Get product categories
+router.get('/meta/categories', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT DISTINCT category FROM products WHERE is_active = true ORDER BY category'
+    );
+    res.json({ categories: result.rows.map(r => r.category) });
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get all products for admin (MUST be before /:slug route)
+router.get('/admin/all', auth, adminAuth, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM products ORDER BY created_at DESC'
+    );
+    res.json({ products: result.rows });
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get product by slug (MUST be after specific routes like /admin/all)
 router.get('/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
@@ -190,19 +216,6 @@ router.delete('/:id', auth, adminAuth, async (req, res) => {
     res.json({ message: 'Product deleted successfully' });
   } catch (error) {
     console.error('Error deleting product:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Get all products for admin
-router.get('/admin/all', auth, adminAuth, async (req, res) => {
-  try {
-    const result = await pool.query(
-      'SELECT * FROM products ORDER BY created_at DESC'
-    );
-    res.json({ products: result.rows });
-  } catch (error) {
-    console.error('Error fetching products:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
