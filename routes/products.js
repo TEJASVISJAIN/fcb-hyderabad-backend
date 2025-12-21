@@ -64,6 +64,30 @@ router.get('/admin/all', auth, adminAuth, async (req, res) => {
   }
 });
 
+// Fix null slugs (admin only)
+router.post('/admin/fix-slugs', auth, adminAuth, async (req, res) => {
+  try {
+    // Get products with null slugs
+    const nullSlugs = await pool.query('SELECT id, name FROM products WHERE slug IS NULL');
+    
+    const updated = [];
+    for (const product of nullSlugs.rows) {
+      const slug = product.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+      
+      await pool.query('UPDATE products SET slug = $1 WHERE id = $2', [slug, product.id]);
+      updated.push({ id: product.id, name: product.name, slug });
+    }
+    
+    res.json({ message: 'Slugs fixed', updated });
+  } catch (error) {
+    console.error('Error fixing slugs:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Get product by slug (MUST be after specific routes like /admin/all)
 router.get('/:slug', async (req, res) => {
   try {
