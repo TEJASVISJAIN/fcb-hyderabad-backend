@@ -6,9 +6,12 @@ const pool = new Pool(
   process.env.DATABASE_URL
     ? {
         connectionString: process.env.DATABASE_URL,
-        ssl: {
+        ssl: process.env.NODE_ENV === 'production' ? {
           rejectUnauthorized: false
-        }
+        } : false,
+        // Increase connection timeout for serverless
+        connectionTimeoutMillis: 10000,
+        idleTimeoutMillis: 30000,
       }
     : {
         host: process.env.DB_HOST,
