@@ -44,15 +44,33 @@ app.use(express.urlencoded({ extended: true }));
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/blogs', require('./routes/blogs'));
-app.use('/api/events', require('./routes/events'));
-app.use('/api/bookings', require('./routes/bookings'));
-app.use('/api/seat-locks', require('./routes/seatLocks'));
-app.use('/api/products', require('./routes/products'));
-app.use('/api/cart', require('./routes/cart'));
-app.use('/api/orders', require('./routes/orders'));
+// Health check route (before other routes)
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok',
+    message: '🔵🔴 Visca el Barça! Backend is running',
+    timestamp: new Date().toISOString(),
+    env: {
+      hasDatabase: !!process.env.DATABASE_URL,
+      hasJWT: !!process.env.JWT_SECRET,
+      nodeEnv: process.env.NODE_ENV
+    }
+  });
+});
+
+// Routes (wrapped in try-catch for better error handling)
+try {
+  app.use('/api/auth', require('./routes/auth'));
+  app.use('/api/blogs', require('./routes/blogs'));
+  app.use('/api/events', require('./routes/events'));
+  app.use('/api/bookings', require('./routes/bookings'));
+  app.use('/api/seat-locks', require('./routes/seatLocks'));
+  app.use('/api/products', require('./routes/products'));
+  app.use('/api/cart', require('./routes/cart'));
+  app.use('/api/orders', require('./routes/orders'));
+} catch (error) {
+  console.error('Error loading routes:', error);
+}
 
 // Welcome route
 app.get('/', (req, res) => {
@@ -67,8 +85,11 @@ app.get('/', (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
+  console.error('Error occurred:', err.stack);
+  res.status(500).json({ 
+    message: 'Something went wrong!',
+    error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+  });
 });
 
 const PORT = process.env.PORT || 5000;
