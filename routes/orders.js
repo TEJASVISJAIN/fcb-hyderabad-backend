@@ -6,15 +6,24 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Ensure upload directory exists
-const uploadDir = 'uploads/payment-screenshots';
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+// Use /tmp in serverless environments (Vercel)
+const uploadDir = process.env.VERCEL ? '/tmp/payment-screenshots' : 'uploads/payment-screenshots';
+
+// Ensure upload directory exists (only attempt in writable locations)
+const ensureUploadDir = () => {
+  if (!fs.existsSync(uploadDir)) {
+    try {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    } catch (error) {
+      console.warn('Could not create upload directory:', error.message);
+    }
+  }
+};
 
 // Configure multer for payment screenshots
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
+    ensureUploadDir(); // Create directory only when actually uploading
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
