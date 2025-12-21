@@ -38,26 +38,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Fix null slugs (TEMPORARY - remove after use)
-router.get('/fix-null-slugs-temp', async (req, res) => {
-  try {
-    console.log('Deleting products with null slugs (old duplicates)...');
-    
-    // Delete products with null slugs (these are old duplicates from before seed script was fixed)
-    const result = await pool.query('DELETE FROM products WHERE slug IS NULL RETURNING id, name');
-    
-    console.log(`✅ Deleted ${result.rows.length} old products with null slugs`);
-    res.json({ 
-      message: 'Old duplicate products deleted', 
-      count: result.rows.length, 
-      deleted: result.rows 
-    });
-  } catch (error) {
-    console.error('Error fixing slugs:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-});
-
 // Get product categories
 router.get('/meta/categories', async (req, res) => {
   try {

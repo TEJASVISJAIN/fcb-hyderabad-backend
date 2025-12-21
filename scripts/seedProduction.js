@@ -111,7 +111,13 @@ async function seedProduction() {
       
       const productResult = await client.query(
         `INSERT INTO products (name, slug, description, category, price, featured_image, is_active, stock_quantity)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+         ON CONFLICT (slug) DO UPDATE SET
+          description = EXCLUDED.description,
+          category = EXCLUDED.category,
+          price = EXCLUDED.price,
+          featured_image = EXCLUDED.featured_image
+         RETURNING id`,
         [product.name, slug, product.description, product.category, product.price, product.image_url, true, 100]
       );
       
@@ -125,7 +131,8 @@ async function seedProduction() {
           for (const color of colors) {
             await client.query(
               `INSERT INTO product_variants (product_id, size, color, stock_quantity, price_adjustment, sku)
-               VALUES ($1, $2, $3, $4, $5, $6)`,
+               VALUES ($1, $2, $3, $4, $5, $6)
+               ON CONFLICT (sku) DO NOTHING`,
               [productId, size, color, 50, 0, `${product.name.substring(0,3).toUpperCase()}-${size}-${color.substring(0,3).toUpperCase()}`]
             );
           }
@@ -133,7 +140,8 @@ async function seedProduction() {
       } else {
         await client.query(
           `INSERT INTO product_variants (product_id, size, color, stock_quantity, price_adjustment, sku)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
+           VALUES ($1, $2, $3, $4, $5, $6)
+           ON CONFLICT (sku) DO NOTHING`,
           [productId, 'One Size', 'Blue/Red', 100, 0, `${product.name.substring(0,3).toUpperCase()}-OS`]
         );
       }
