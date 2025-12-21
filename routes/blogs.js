@@ -7,11 +7,37 @@ const { auth, adminAuth } = require('../middleware/auth');
 // Get all blogs (public)
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10, tag } = req.query;
     const offset = (page - 1) * limit;
 
-    const result = await pool.query(
-      `SELECT b.*, u.username as author_name, u.email as author_email,
+    let query, countQuery, params, countParams;
+
+    if (tag) {
+      // Filter by tag slug
+      query = `SELECT DISTINCT b.*, u.username as author_name, u.email as author_email,
+              COALESCE(array_agg(DISTINCT t.name) FILTER (WHERE t.name IS NOT NULL), '{}') as tags
+       FROM blogs b
+       LEFT JOIN users u ON b.author_id = u.id
+       LEFT JOIN blog_tags bt ON b.id = bt.blog_id
+       LEFT JOIN tags t ON bt.tag_id = t.id
+       WHERE b.id IN (
+         SELECT bt2.blog_id FROM blog_tags bt2
+         JOIN tags t2 ON bt2.tag_id = t2.id
+         WHERE t2.slug = $1
+       )
+       GROUP BY b.id, u.username, u.email
+       ORDER BY b.created_at DESC
+       LIMIT $2 OFFSET $3`;
+      params = [tag, limit, offset];
+
+      countQuery = `SELECT COUNT(DISTINCT b.id) FROM blogs b
+                    JOIN blog_tags bt ON b.id = bt.blog_id
+                    JOIN tags t ON bt.tag_id = t.id
+                    WHERE t.slug = $1`;
+      countParams = [tag];
+    } else {
+      // All blogs
+      query = `SELECT b.*, u.username as author_name, u.email as author_email,
               COALESCE(array_agg(DISTINCT t.name) FILTER (WHERE t.name IS NOT NULL), '{}') as tags
        FROM blogs b
        LEFT JOIN users u ON b.author_id = u.id
@@ -19,11 +45,15 @@ router.get('/', async (req, res) => {
        LEFT JOIN tags t ON bt.tag_id = t.id
        GROUP BY b.id, u.username, u.email
        ORDER BY b.created_at DESC
-       LIMIT $1 OFFSET $2`,
-      [limit, offset]
-    );
+       LIMIT $1 OFFSET $2`;
+      params = [limit, offset];
 
-    const countResult = await pool.query('SELECT COUNT(*) FROM blogs');
+      countQuery = 'SELECT COUNT(*) FROM blogs';
+      countParams = [];
+    }
+
+    const result = await pool.query(query, params);
+    const countResult = await pool.query(countQuery, countParams);
     const total = parseInt(countResult.rows[0].count);
 
     res.json({
