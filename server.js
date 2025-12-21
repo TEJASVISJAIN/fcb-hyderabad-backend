@@ -15,7 +15,7 @@ const corsOptions = {
   origin: [
     'http://localhost:3000',
     'https://fcb-hyderabad-frontend.vercel.app',
-    'https://fcb-hyderabad-frontend-r1hpdhodn-tejasvisjains-projects.vercel.app',
+    'https://fcb-hyderabad-frontend-goxyrosr9-tejasvisjains-projects.vercel.app',
     /\.vercel\.app$/ // Allow all Vercel preview deployments
   ],
   credentials: true,
