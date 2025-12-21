@@ -112,6 +112,14 @@ router.get('/:slug', async (req, res) => {
 
     product.variants = variantsResult.rows;
 
+    // Extract unique sizes and colors from variants if not set in product
+    if (!product.sizes || product.sizes.length === 0) {
+      product.sizes = [...new Set(variantsResult.rows.map(v => v.size))];
+    }
+    if (!product.colors || product.colors.length === 0) {
+      product.colors = [...new Set(variantsResult.rows.map(v => v.color))];
+    }
+
     res.json({ product });
   } catch (error) {
     console.error('Error fetching product:', error);
