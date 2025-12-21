@@ -37,18 +37,16 @@ const upload = multer({
 router.get('/upcoming', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT e.*, u.name as created_by_name,
-              (e.total_capacity - e.booked_seats) as available_seats
+      `SELECT e.*
        FROM events e
-       LEFT JOIN users u ON e.created_by = u.id
-       WHERE e.event_date >= NOW() AND e.status = 'upcoming'
+       WHERE e.event_date >= NOW()
        ORDER BY e.event_date ASC`
     );
 
     res.json({ events: result.rows });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error fetching upcoming events:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -58,10 +56,8 @@ router.get('/:id', async (req, res) => {
     const { id } = req.params;
 
     const result = await pool.query(
-      `SELECT e.*, u.name as created_by_name,
-              (e.total_capacity - e.booked_seats) as available_seats
+      `SELECT e.*
        FROM events e
-       LEFT JOIN users u ON e.created_by = u.id
        WHERE e.id = $1`,
       [id]
     );
@@ -72,8 +68,8 @@ router.get('/:id', async (req, res) => {
 
     res.json({ event: result.rows[0] });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error fetching event:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -86,13 +82,14 @@ router.get('/:id/availability', async (req, res) => {
     await pool.query('DELETE FROM seat_locks WHERE expires_at < NOW()');
     
     const result = await pool.query(
-      `SELECT e.total_capacity, e.booked_seats, 
+      `SELECT e.total_seats, 
+              (e.total_seats - e.available_seats) as booked_seats,
               COALESCE(SUM(sl.seats_locked), 0) as locked_seats,
-              (e.total_capacity - e.booked_seats - COALESCE(SUM(sl.seats_locked), 0)) as available_seats
+              (e.available_seats - COALESCE(SUM(sl.seats_locked), 0)) as available_now
        FROM events e
        LEFT JOIN seat_locks sl ON e.id = sl.event_id AND sl.expires_at > NOW()
-       WHERE e.id = $1 AND e.status = 'upcoming'
-       GROUP BY e.id, e.total_capacity, e.booked_seats`,
+       WHERE e.id = $1
+       GROUP BY e.id, e.total_seats, e.available_seats`,
       [id]
     );
 
@@ -103,7 +100,7 @@ router.get('/:id/availability', async (req, res) => {
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Error fetching availability:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -111,20 +108,19 @@ router.get('/:id/availability', async (req, res) => {
 router.get('/admin/all', auth, adminAuth, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT e.*, u.name as created_by_name,
-              (e.total_capacity - e.booked_seats) as available_seats,
+      `SELECT e.*,
+              (e.total_seats - e.available_seats) as booked_seats,
               COUNT(b.id) as total_bookings
        FROM events e
-       LEFT JOIN users u ON e.created_by = u.id
        LEFT JOIN bookings b ON e.id = b.event_id
-       GROUP BY e.id, u.name
+       GROUP BY e.id
        ORDER BY e.event_date DESC`
     );
 
     res.json({ events: result.rows });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error fetching admin events:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -135,12 +131,9 @@ router.post(
   adminAuth,
   [
     body('title').trim().notEmpty().withMessage('Title is required'),
-    body('venue_name').trim().notEmpty().withMessage('Venue name is required'),
-    body('venue_address').trim().notEmpty().withMessage('Venue address is required'),
     body('event_date').isISO8601().withMessage('Valid date is required'),
     body('price').isFloat({ min: 0 }).withMessage('Valid price is required'),
-    body('total_capacity').isInt({ min: 1 }).withMessage('Valid capacity is required'),
-    body('upi_id').trim().notEmpty().withMessage('UPI ID is required'),
+    body('total_seats').isInt({ min: 1 }).withMessage('Valid capacity is required'),
   ],
   async (req, res) => {
     try {
@@ -152,37 +145,30 @@ router.post(
       const {
         title,
         description,
-        match_details,
+        location,
         venue_name,
-        venue_address,
         event_date,
         price,
-        cover_charge,
-        total_capacity,
-        cover_image,
-        upi_id,
+        total_seats,
+        image_url,
       } = req.body;
 
       const result = await pool.query(
         `INSERT INTO events (
-          title, description, match_details, venue_name, venue_address,
-          event_date, price, cover_charge, total_capacity, cover_image, upi_id, created_by
+          title, description, location, venue_name, event_date, price, 
+          total_seats, available_seats, image_url
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $7, $8)
         RETURNING *`,
         [
           title,
           description,
-          match_details,
+          location,
           venue_name,
-          venue_address,
           event_date,
           price,
-          cover_charge || 0,
-          total_capacity,
-          cover_image,
-          upi_id,
-          req.user.id,
+          total_seats,
+          image_url,
         ]
       );
 
@@ -191,12 +177,11 @@ router.post(
         event: result.rows[0],
       });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Server error' });
+      console.error('Error creating event:', error);
+      res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
 );
-
 // Update event (admin only)
 router.put('/:id', auth, adminAuth, async (req, res) => {
   try {
@@ -204,48 +189,36 @@ router.put('/:id', auth, adminAuth, async (req, res) => {
     const {
       title,
       description,
-      match_details,
+      location,
       venue_name,
-      venue_address,
       event_date,
       price,
-      cover_charge,
-      total_capacity,
-      cover_image,
-      upi_id,
-      status,
+      total_seats,
+      image_url,
     } = req.body;
 
     const result = await pool.query(
       `UPDATE events 
        SET title = COALESCE($1, title),
            description = COALESCE($2, description),
-           match_details = COALESCE($3, match_details),
+           location = COALESCE($3, location),
            venue_name = COALESCE($4, venue_name),
-           venue_address = COALESCE($5, venue_address),
-           event_date = COALESCE($6, event_date),
-           price = COALESCE($7, price),
-           cover_charge = COALESCE($8, cover_charge),
-           total_capacity = COALESCE($9, total_capacity),
-           cover_image = COALESCE($10, cover_image),
-           upi_id = COALESCE($11, upi_id),
-           status = COALESCE($12, status),
+           event_date = COALESCE($5, event_date),
+           price = COALESCE($6, price),
+           total_seats = COALESCE($7, total_seats),
+           image_url = COALESCE($8, image_url),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $13
+       WHERE id = $9
        RETURNING *`,
       [
         title,
         description,
-        match_details,
+        location,
         venue_name,
-        venue_address,
         event_date,
         price,
-        cover_charge,
-        total_capacity,
-        cover_image,
-        upi_id,
-        status,
+        total_seats,
+        image_url,
         id,
       ]
     );
@@ -259,8 +232,8 @@ router.put('/:id', auth, adminAuth, async (req, res) => {
       event: result.rows[0],
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error updating event:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
