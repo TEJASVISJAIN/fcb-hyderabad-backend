@@ -39,17 +39,17 @@ router.post(
 
       // Create user
       const newUser = await pool.query(
-        `INSERT INTO users (name, email, password, role) 
+        `INSERT INTO users (username, email, password, is_admin) 
          VALUES ($1, $2, $3, $4) 
-         RETURNING id, name, email, role, created_at`,
-        [name, email, hashedPassword, 'user']
+         RETURNING id, username, email, is_admin, created_at`,
+        [name, email, hashedPassword, false]
       );
 
       const user = newUser.rows[0];
 
       // Create token
       const token = jwt.sign(
-        { id: user.id, email: user.email, role: user.role },
+        { id: user.id, email: user.email, isAdmin: user.is_admin },
         process.env.JWT_SECRET,
         { expiresIn: '7d' }
       );
@@ -59,9 +59,9 @@ router.post(
         token,
         user: {
           id: user.id,
-          name: user.name,
+          name: user.username,
           email: user.email,
-          role: user.role,
+          role: user.is_admin ? 'admin' : 'user',
         },
       });
     } catch (error) {
@@ -107,7 +107,7 @@ router.post(
 
       // Create token
       const token = jwt.sign(
-        { id: user.id, email: user.email, role: user.role },
+        { id: user.id, email: user.email, isAdmin: user.is_admin },
         process.env.JWT_SECRET,
         { expiresIn: '7d' }
       );
@@ -117,9 +117,9 @@ router.post(
         token,
         user: {
           id: user.id,
-          name: user.name,
+          name: user.username,
           email: user.email,
-          role: user.role,
+          role: user.is_admin ? 'admin' : 'user',
         },
       });
     } catch (error) {
@@ -141,7 +141,7 @@ router.get('/me', async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     const result = await pool.query(
-      'SELECT id, name, email, role, avatar_url, created_at FROM users WHERE id = $1',
+      'SELECT id, username, email, is_admin, created_at FROM users WHERE id = $1',
       [decoded.id]
     );
 
@@ -149,7 +149,17 @@ router.get('/me', async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.json({ user: result.rows[0] });
+    const user = result.rows[0];
+
+    res.json({ 
+      user: {
+        id: user.id,
+        name: user.username,
+        email: user.email,
+        role: user.is_admin ? 'admin' : 'user',
+        created_at: user.created_at
+      }
+    });
   } catch (error) {
     console.error(error);
     res.status(401).json({ message: 'Token is not valid' });

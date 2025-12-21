@@ -33,7 +33,7 @@ const optionalAuth = (req, res, next) => {
 };
 
 const adminAuth = (req, res, next) => {
-  if (req.user.role !== 'admin') {
+  if (!req.user.isAdmin) {
     return res.status(403).json({ message: 'Access denied. Admin only.' });
   }
   next();
