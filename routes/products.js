@@ -95,19 +95,6 @@ router.get('/:slug', async (req, res) => {
   }
 });
 
-// Get product categories
-router.get('/meta/categories', async (req, res) => {
-  try {
-    const result = await pool.query(
-      'SELECT DISTINCT category FROM products WHERE is_active = true ORDER BY category'
-    );
-    res.json({ categories: result.rows.map(r => r.category) });
-  } catch (error) {
-    console.error('Error fetching categories:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
 // ADMIN ROUTES
 
 // Create product (admin only)
